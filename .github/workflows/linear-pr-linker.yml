@@ -1,0 +1,45 @@
+name: Linear Issue Linker
+
+on:
+  pull_request:
+    types: [opened, edited]
+
+jobs:
+  link-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract Linear Issue Key
+        id: extract_key
+        # Extracts SSA-123 from branch name
+        run: |
+          BRANCH_NAME="${{ github.head_ref }}"
+          if [[ $BRANCH_NAME =~ (SSA-[0-9]+) ]]; then
+            echo "issue_key=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
+            echo "Found Linear Issue: ${BASH_REMATCH[1]}"
+          else
+            echo "No Linear issue key found in branch name."
+          fi
+
+      - name: Update PR Description
+        if: steps.extract_key.outputs.issue_key != ''
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issueKey = '${{ steps.extract_key.outputs.issue_key }}';
+            const linearUrl = `https://linear.app/your-workspace-name/issue/${issueKey}`;
+            const badge = `[![Linear](https://img.shields.io/badge/Linear-${issueKey}-5E6AD2?style=flat&logo=linear)](${linearUrl})`;
+            
+            const currentBody = context.payload.pull_request.body || '';
+            
+            // Only add if not already present
+            if (!currentBody.includes(issueKey)) {
+              const newBody = `${badge}\n\n${currentBody}`;
+              
+              github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+                body: newBody
+              });
+              console.log(`Successfully updated PR body with Linear link for ${issueKey}`);
+            }
