@@ -2,23 +2,51 @@ name: Linear Issue Linker
 
 on:
   pull_request:
-    types: [opened, edited]
+    types: [opened, edited, synchronize]
 
 jobs:
   link-issue:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
       - name: Extract Linear Issue Key
         id: extract_key
-        # Extracts SSA-123 from branch name
         run: |
           BRANCH_NAME="${{ github.head_ref }}"
           if [[ $BRANCH_NAME =~ (SSA-[0-9]+) ]]; then
             echo "issue_key=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
-            echo "Found Linear Issue: ${BASH_REMATCH[1]}"
-          else
-            echo "No Linear issue key found in branch name."
           fi
+
+      - name: Fetch Issue Details from Linear
+        if: steps.extract_key.outputs.issue_key != ''
+        id: linear_data
+        uses: actions/github-script@v6
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+        with:
+          script: |
+            const issueKey = '${{ steps.extract_key.outputs.issue_key }}';
+            const apiKey = process.env.LINEAR_API_KEY;
+            
+            if (!apiKey) {
+              console.log("LINEAR_API_KEY secret is not set. Skipping content fetch.");
+              return;
+            }
+
+            const query = `query { issue(id: "${issueKey}") { title description } }`;
+            const response = await fetch('https://api.linear.app/graphql', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': apiKey },
+              body: JSON.stringify({ query })
+            });
+            const { data } = await response.json();
+            
+            if (data && data.issue) {
+              core.setOutput('title', data.issue.title);
+              // Description이 없을 경우를 대비해 빈 문자열 처리
+              core.setOutput('description', data.issue.description || '상세 설명이 없습니다.');
+            }
 
       - name: Update PR Description
         if: steps.extract_key.outputs.issue_key != ''
@@ -26,20 +54,27 @@ jobs:
         with:
           script: |
             const issueKey = '${{ steps.extract_key.outputs.issue_key }}';
-            const linearUrl = `https://linear.app/your-workspace-name/issue/${issueKey}`;
-            const badge = `[![Linear](https://img.shields.io/badge/Linear-${issueKey}-5E6AD2?style=flat&logo=linear)](${linearUrl})`;
+            const issueTitle = `${{ steps.linear_data.outputs.title }}` || '';
+            const issueDesc = `${{ steps.linear_data.outputs.description }}` || '';
+            const workspace = 'ssafy-test-workspace';
+            const linearUrl = `https://linear.app/${workspace}/issue/${issueKey}`;
+            const badgeKey = issueKey.replace(/-/g, '--');
+            const badge = `[![Linear](https://img.shields.io/badge/Linear-${badgeKey}-5E6AD2)](${linearUrl})`;
             
-            const currentBody = context.payload.pull_request.body || '';
+            let currentBody = context.payload.pull_request.body || '';
             
-            // Only add if not already present
-            if (!currentBody.includes(issueKey)) {
-              const newBody = `${badge}\n\n${currentBody}`;
-              
+            // 1. 기존 배지 제거 로직
+            const cleanedBody = currentBody.replace(/\[\!\[Linear\].*?\n\n/g, '');
+            
+            // 2. 새로운 본문 구성 (배지 + Linear 제목 + Linear 설명)
+            // 만약 사용자가 이미 내용을 많이 적었다면, 중복 방지를 위해 Linear 설명은 처음 한 번만 추가하도록 세팅 가능
+            const newBody = `${badge}\n\n### 📋 ${issueTitle}\n\n${issueDesc}\n\n---\n${cleanedBody}`;
+            
+            if (currentBody !== newBody && !currentBody.includes(issueTitle)) {
               github.rest.pulls.update({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 pull_number: context.issue.number,
                 body: newBody
               });
-              console.log(`Successfully updated PR body with Linear link for ${issueKey}`);
             }
