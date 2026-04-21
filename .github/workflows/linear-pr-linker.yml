@@ -28,7 +28,7 @@ jobs:
         with:
           script: |
             const issueKey = '${{ steps.extract_key.outputs.issue_key }}';
-            const linearUrl = `https://linear.app/your-workspace-name/issue/${issueKey}`;
+            const linearUrl = `https://linear.app/ssafy-test-workspace/issue/${issueKey}`;
             const badge = `[![Linear](https://img.shields.io/badge/Linear-${issueKey}-5E6AD2?style=flat&logo=linear)](${linearUrl})`;
             
             const currentBody = context.payload.pull_request.body || '';
