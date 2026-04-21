@@ -14,9 +14,9 @@ import java.util.Map;
  * 공통 진입점: 앱의 모든 "/front/*" 요청을 이 서블릿이 먼저 가로챕니다.
  * Spring의 DispatcherServlet과 동일한 역할을 수행합니다.
  *
- * <완료 기준 만족 여부 확인>
- * - Front Controller 패턴의 필요성 이해: 모든 요청의 공통 처리(예: 인코딩, 포워딩, 로깅)를 여기서 한 번에 해결.
- * - DispatcherServlet 구조와 매핑: Map 기반 핸들러 매핑 체계가 실제 Spring의 HandlerMapping을 흉내낸 것임을 인지.
+ * <학습 목표>
+ * 프론트 컨트롤러 패턴을 직접 구현해보며, 
+ * URL 매핑, 요청 위임, 뷰 처리가 한 곳에서 이루어지는 구조를 이해합니다.
  */
 @WebServlet(name = "frontControllerServlet", urlPatterns = "/front/*")
 public class FrontControllerServlet extends HttpServlet {
@@ -24,9 +24,10 @@ public class FrontControllerServlet extends HttpServlet {
     private Map<String, Controller> controllerMap = new HashMap<>();
 
     public FrontControllerServlet() {
-        // 실제 Spring에서는 HandlerMapping이 수행하는 URL -> Controller 연결 작업입니다.
-        controllerMap.put("/front/member/save", new MemberController());
-        controllerMap.put("/front/board/list", new BoardController());
+        // TODO 2: controllerMap에 URL 경로와 그에 대응하는 하위 컨트롤러 객체를 등록하세요.
+        // 예시: "/front/member/save" -> MemberController
+        // 예시: "/front/board/list" -> BoardController
+        
     }
 
     @Override
@@ -37,7 +38,8 @@ public class FrontControllerServlet extends HttpServlet {
         String requestURI = request.getRequestURI();
 
         // 2. 적절한 핸들러(Controller) 찾기 (HandlerMapping 역할)
-        Controller controller = controllerMap.get(requestURI);
+        // TODO 3: 등록해둔 controllerMap에서 현재 요청 URI에 맞는 Controller를 찾아 꺼내세요.
+        Controller controller = null; // 이 부분을 수정하세요.
         
         if (controller == null) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -45,7 +47,8 @@ public class FrontControllerServlet extends HttpServlet {
         }
 
         // 3. 실제 컨트롤러 로직 실행 (HandlerAdapter 역할 위임)
-        String viewName = controller.process(request, response);
+        // TODO 4: 찾은 controller의 process() 메서드를 호출하고, 반환된 논리적 뷰 이름을 변수에 저장하세요.
+        String viewName = null; // 이 부분을 수정하세요.
 
         // 4. View 전환 처리 (ViewResolver 역할 시뮬레이션)
         if (viewName != null) {
@@ -53,8 +56,13 @@ public class FrontControllerServlet extends HttpServlet {
             if (viewName.startsWith("redirect:")) {
                 response.sendRedirect(viewName.substring("redirect:".length()));
             } else {
-                String viewPath = "/WEB-INF/views/" + viewName + ".jsp";
-                request.getRequestDispatcher(viewPath).forward(request, response);
+                // TODO 5: 반환받은 논리적 뷰 이름(viewName)을 활용하여 실제 JSP가 있는 물리적 경로를 완성하세요.
+                // 물리적 경로는 "/WEB-INF/views/[논리적뷰이름].jsp" 형식입니다.
+                String viewPath = ""; // 이 부분을 수정하세요.
+                
+                // TODO 6: 완성된 물리적 경로를 사용하여 forward를 수행하세요.
+                // 예: request.getRequestDispatcher(경로).forward(request, response);
+                
             }
         }
     }
