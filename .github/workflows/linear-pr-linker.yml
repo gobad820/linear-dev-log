@@ -29,8 +29,9 @@ jobs:
             const issueKey = '${{ steps.extract_key.outputs.issue_key }}';
             const workspace = 'ssafy-test-workspace';
             const linearUrl = `https://linear.app/${workspace}/issue/${issueKey}`;
-            // Shields.io 정적 배지 주소 (로고 제외하여 안정성 확보)
-            const badge = `[![Linear](https://img.shields.io/badge/Linear-${issueKey}-5E6AD2)](${linearUrl})`;
+            // Shields.io requires double dash for escaping: SSA-56 -> SSA--56
+            const badgeKey = issueKey.replace(/-/g, '--');
+            const badge = `[![Linear](https://img.shields.io/badge/Linear-${badgeKey}-5E6AD2)](${linearUrl})`;
             
             let currentBody = context.payload.pull_request.body || '';
             
