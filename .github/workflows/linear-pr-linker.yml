@@ -12,7 +12,6 @@ jobs:
     steps:
       - name: Extract Linear Issue Key
         id: extract_key
-        # Extracts SSA-123 from branch name
         run: |
           BRANCH_NAME="${{ github.head_ref }}"
           if [[ $BRANCH_NAME =~ (SSA-[0-9]+) ]]; then
@@ -28,20 +27,26 @@ jobs:
         with:
           script: |
             const issueKey = '${{ steps.extract_key.outputs.issue_key }}';
-            const linearUrl = `https://linear.app/ssafy-test-workspace/issue/${issueKey}`;
-            const badge = `[![Linear](https://img.shields.io/badge/Linear-${issueKey}-5E6AD2?style=flat&logo=linear)](${linearUrl})`;
+            const workspace = 'ssafy-test-workspace';
+            const linearUrl = `https://linear.app/${workspace}/issue/${issueKey}`;
+            // Shields.io 정적 배지 주소 (로고 제외하여 안정성 확보)
+            const badge = `[![Linear](https://img.shields.io/badge/Linear-${issueKey}-5E6AD2)](${linearUrl})`;
             
-            const currentBody = context.payload.pull_request.body || '';
+            let currentBody = context.payload.pull_request.body || '';
             
-            // Only add if not already present
-            if (!currentBody.includes(issueKey)) {
-              const newBody = `${badge}\n\n${currentBody}`;
-              
+            // 1. 기존에 잘못 들어간 Linear 배지나 링크가 있다면 제거 (중복 방지)
+            const regex = /\[\!\[Linear\].*?\n\n/g;
+            const cleanedBody = currentBody.replace(regex, '');
+            
+            // 2. 무조건 맨 위에 최신 배지 삽입
+            const newBody = `${badge}\n\n${cleanedBody}`;
+            
+            if (currentBody !== newBody) {
               github.rest.pulls.update({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 pull_number: context.issue.number,
                 body: newBody
               });
-              console.log(`Successfully updated PR body with Linear link for ${issueKey}`);
+              console.log(`Successfully updated/replaced PR body with Linear link for ${issueKey}`);
             }
