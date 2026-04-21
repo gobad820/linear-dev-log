@@ -18,10 +18,11 @@ public class MemberController implements Controller {
         
         // TODO 7: request에서 클라이언트가 전달한 "username" 파라미터를 읽어오세요.
         // 그리고 request의 속성(Attribute) 이름 "member"에 추출한 값을 저장하세요.
-        
+        String userName = request.getParameter("username"); 
+        request.setAttribute("member", userName);
         
         // TODO 8: 처리가 완료된 후 뷰 리졸버가 처리할 수 있도록, 
         // 논리적 뷰 이름인 "save-result"를 반환하도록 수정하세요.
-        return null; // 이 부분을 수정하세요.
+        return "save-result"; // 이 부분을 수정하세요.
     }
 }

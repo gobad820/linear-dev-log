@@ -27,7 +27,8 @@ public class FrontControllerServlet extends HttpServlet {
         // TODO 2: controllerMap에 URL 경로와 그에 대응하는 하위 컨트롤러 객체를 등록하세요.
         // 예시: "/front/member/save" -> MemberController
         // 예시: "/front/board/list" -> BoardController
-        
+        controllerMap.put("/front/memeber/save", new MemberController());
+        controllerMap.put("/front/board/list", new BoardController());
     }
 
     @Override
@@ -39,7 +40,7 @@ public class FrontControllerServlet extends HttpServlet {
 
         // 2. 적절한 핸들러(Controller) 찾기 (HandlerMapping 역할)
         // TODO 3: 등록해둔 controllerMap에서 현재 요청 URI에 맞는 Controller를 찾아 꺼내세요.
-        Controller controller = null; // 이 부분을 수정하세요.
+        Controller controller = controllerMap.get(requestURI); // 이 부분을 수정하세요.
         
         if (controller == null) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -48,7 +49,7 @@ public class FrontControllerServlet extends HttpServlet {
 
         // 3. 실제 컨트롤러 로직 실행 (HandlerAdapter 역할 위임)
         // TODO 4: 찾은 controller의 process() 메서드를 호출하고, 반환된 논리적 뷰 이름을 변수에 저장하세요.
-        String viewName = null; // 이 부분을 수정하세요.
+        String viewName = controller.process(request, response); // 이 부분을 수정하세요.
 
         // 4. View 전환 처리 (ViewResolver 역할 시뮬레이션)
         if (viewName != null) {
@@ -58,10 +59,11 @@ public class FrontControllerServlet extends HttpServlet {
             } else {
                 // TODO 5: 반환받은 논리적 뷰 이름(viewName)을 활용하여 실제 JSP가 있는 물리적 경로를 완성하세요.
                 // 물리적 경로는 "/WEB-INF/views/[논리적뷰이름].jsp" 형식입니다.
-                String viewPath = ""; // 이 부분을 수정하세요.
+                String viewPath = "/WEB_INF/view/" +  viewName + ".jsp"; // 이 부분을 수정하세요.
                 
                 // TODO 6: 완성된 물리적 경로를 사용하여 forward를 수행하세요.
                 // 예: request.getRequestDispatcher(경로).forward(request, response);
+                request.getRequestDispatcher(viewPath).forward(request, response);
                 
             }
         }

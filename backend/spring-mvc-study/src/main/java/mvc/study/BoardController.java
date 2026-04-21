@@ -20,6 +20,6 @@ public class BoardController implements Controller {
         
         // TODO 9: 게시판 목록 화면을 출력할 수 있도록, 
         // 뷰의 논리적 이름인 "board-list"를 반환하게 수정하세요.
-        return null; // 이 부분을 수정하세요.
+        return "board-list"; // 이 부분을 수정하세요.
     }
 }

@@ -13,5 +13,6 @@ import java.io.IOException;
 public interface Controller {
     // TODO 1: 요청을 처리하고, View(JSP 등)의 논리적 경로(String)를 반환하는 process 메서드를 선언하세요.
     // 매개변수로는 HttpServletRequest와 HttpServletResponse를 받습니다.
+    String process(HttpServletRequest request, HttpServletResponse response)throws ServletException, IOException;
     
 }
