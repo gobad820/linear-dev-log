@@ -61,13 +61,24 @@ async function startTask() {
     console.log(`\n🔧 선택한 이슈: [${response.selectedIssue.id}]`);
     console.log(`🌿 브랜치 생성 및 이동: git checkout -b ${branchName}`);
 
-    // 4. Git 명령어 실행
+    // 4. Git 명령어 실행 (이미 있으면 이동, 없으면 생성)
     try {
-      execSync(`git checkout -b ${branchName}`, { stdio: 'inherit' });
-      console.log(`\n✅ 성공적으로 '${branchName}' 브랜치로 이동했습니다!`);
+      console.log(`\n⏳ 브랜치 확인 중...`);
+      // 로컬에 해당 브랜치가 이미 있는지 확인
+      const branchExists = execSync(`git branch --list ${branchName}`).toString().trim() !== "";
+
+      if (branchExists) {
+        console.log(`💡 '${branchName}' 브랜치가 이미 존재합니다. 해당 브랜치로 이동합니다.`);
+        execSync(`git checkout ${branchName}`, { stdio: 'inherit' });
+      } else {
+        console.log(`🌿 새 브랜치를 생성하고 이동합니다.`);
+        execSync(`git checkout -b ${branchName}`, { stdio: 'inherit' });
+      }
+      
+      console.log(`\n✅ 준비 완료! 현재 브랜치: '${branchName}'`);
       console.log(`이제 코딩을 시작하시고, 작업이 끝나면 ./sync_workspace.sh 로 동기화하세요.`);
     } catch (gitError) {
-      console.error("\n❌ Git 브랜치 생성 실패. 이미 존재하는 브랜치인지 확인하세요.");
+      console.error("\n❌ Git 명령어 실행 중 오류가 발생했습니다.");
     }
 
   } catch (error) {

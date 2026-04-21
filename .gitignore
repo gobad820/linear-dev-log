@@ -2,3 +2,6 @@
 .metadata/
 *.zip
 *.Identifier
+node_modules/
+package-lock.json
+package.json
