@@ -1,29 +1,49 @@
 #!/bin/bash
 
 # 색상 설정
-GREEN='\039[0;32m'
-BLUE='\039[0;34m'
-NC='\039[0m' # No Color
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
 
-echo -e "${BLUE}🔄 Windows Workspace -> WSL Linear Repository 동기화 시작...${NC}"
-
-# Windows 워크스페이스 경로
+# 경로 설정
 WIN_WORKSPACE="/mnt/c/SSAFY/1557591/workspace/05.backend"
-# WSL 레포지토리 경로
 WSL_REPO="/home/ssafy/linear-dev-log/backend"
 
-# 1. 최신 코드 복사 (빌드 결과물인 target, .metadata 등 불필요한 파일 제외)
-echo "📦 소스 코드 복사 중..."
-rsync -av --exclude 'target' --exclude '.settings' --exclude '.classpath' --exclude '.project' "$WIN_WORKSPACE/score-app" "$WSL_REPO/"
-rsync -av --exclude 'target' --exclude '.settings' --exclude '.classpath' --exclude '.project' "$WIN_WORKSPACE/score-mvc-app" "$WSL_REPO/"
-rsync -av --exclude 'target' --exclude '.settings' --exclude '.classpath' --exclude '.project' "$WIN_WORKSPACE/score-service-app" "$WSL_REPO/"
-rsync -av --exclude 'target' --exclude '.settings' --exclude '.classpath' --exclude '.project' "$WIN_WORKSPACE/BE_03_lab.zip_expanded/BE_03_lab" "$WSL_REPO/"
+# 현재 브랜치명 가져오기
+BRANCH_NAME=$(git symbolic-ref --short HEAD 2>/dev/null)
 
-echo -e "${GREEN}✅ 소스 코드 동기화 완료!${NC}"
+echo -e "${BLUE}🔄 스마트 동기화 시작 (현재 브랜치: $BRANCH_NAME)${NC}"
 
-# 2. Linear 자동 동기화 스크립트 실행 (선택사항)
-echo -e "${BLUE}🤖 Linear 이슈 상태 점검 중...${NC}"
-cd /home/ssafy/linear-dev-log
-node ./linear-integration/linear_git_sync.js
+# 브랜치에 따른 동기화 대상 설정
+PROJECT_DIR=""
+case "$BRANCH_NAME" in
+    *SSA-56*) PROJECT_DIR="score-app" ;;
+    *SSA-57*) PROJECT_DIR="score-mvc-app" ;;
+    *SSA-58*) PROJECT_DIR="score-service-app" ;;
+    *SSA-59*) PROJECT_DIR="temp-app" ;;
+    *SSA-50*|*SSA-51*|*SSA-52*|*SSA-54*) PROJECT_DIR="BE_03_lab.zip_expanded/BE_03_lab" ;;
+    *) 
+        echo -e "${YELLOW}⚠️ 매칭되는 프로젝트를 찾지 못했습니다. 전체 프로젝트를 동기화합니다.${NC}"
+        PROJECT_DIR="ALL"
+        ;;
+esac
 
-echo -e "${GREEN}🎉 모든 준비가 끝났습니다! 이제 git add . 후 커밋하세요.${NC}"
+sync_project() {
+    local folder=$1
+    echo -e "📦 [${BLUE}$folder${NC}] 소스 코드 가져오는 중..."
+    rsync -av --delete --exclude 'target' --exclude '.settings' --exclude '.classpath' --exclude '.project' --exclude '.metadata' \
+        "$WIN_WORKSPACE/$folder/" "$WSL_REPO/${folder##*/}/"
+}
+
+if [ "$PROJECT_DIR" == "ALL" ]; then
+    sync_project "score-app"
+    sync_project "score-mvc-app"
+    sync_project "score-service-app"
+    sync_project "temp-app"
+    sync_project "BE_03_lab.zip_expanded/BE_03_lab"
+else
+    sync_project "$PROJECT_DIR"
+fi
+
+echo -e "${GREEN}✅ 동기화 완료! 이제 안심하고 'git add .' 하셔도 됩니다.${NC}"
